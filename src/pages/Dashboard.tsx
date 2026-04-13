@@ -1,26 +1,55 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/ecosort-logo.jpeg";
-import { Upload, Droplets, Sun, TrendingUp, TrendingDown, ImageIcon, LogOut, Leaf } from "lucide-react";
+import { Upload, Droplets, Sun, TrendingUp, TrendingDown, ImageIcon, LogOut, Leaf, MapPin, Recycle, Trash2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-interface PredictionResult {
-  wet: number;
-  dry: number;
-  dominant: "wet" | "dry";
+interface WasteType {
+  name: string;
+  category: "biodegradable" | "non-biodegradable";
+  suggestion: "compost" | "animal_feed" | "recycling" | "landfill";
 }
 
-const mockHistory = [
-  { date: "Today", wet: 58, dry: 42 },
-  { date: "Yesterday", wet: 45, dry: 55 },
-];
+interface PredictionResult {
+  wet_percent: number;
+  dry_percent: number;
+  dominant: string;
+  waste_types: WasteType[];
+}
+
+const suggestionLabels: Record<string, { label: string; color: string }> = {
+  compost: { label: "♻️ Compost", color: "text-green-600" },
+  animal_feed: { label: "🐄 Animal Feed", color: "text-amber-600" },
+  recycling: { label: "🔄 Recycling", color: "text-blue-600" },
+  landfill: { label: "🗑️ Landfill", color: "text-gray-500" },
+};
 
 const Dashboard = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) fetchHistory();
+  }, [user]);
+
+  const fetchHistory = async () => {
+    const { data } = await supabase
+      .from("waste_scans")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (data) setHistory(data);
+  };
 
   const handleFile = useCallback((file: File) => {
     const reader = new FileReader();
@@ -41,18 +70,56 @@ const Dashboard = () => {
     if (file) handleFile(file);
   };
 
-  const analyze = () => {
+  const analyze = async () => {
+    if (!preview) return;
     setAnalyzing(true);
-    setTimeout(() => {
-      const wet = Math.floor(Math.random() * 40) + 30;
-      setResult({ wet, dry: 100 - wet, dominant: wet > 50 ? "wet" : "dry" });
+
+    try {
+      const { data, error } = await supabase.functions.invoke("classify-waste", {
+        body: { imageBase64: preview },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const prediction: PredictionResult = data;
+      setResult(prediction);
+
+      // Save to database
+      if (user) {
+        await supabase.from("waste_scans").insert({
+          user_id: user.id,
+          wet_percent: prediction.wet_percent,
+          dry_percent: prediction.dry_percent,
+          dominant: prediction.dominant,
+          waste_types: prediction.waste_types as any,
+        });
+        fetchHistory();
+      }
+    } catch (err: any) {
+      console.error("Analysis error:", err);
+      toast({ title: "Analysis failed", description: err.message || "Please try again.", variant: "destructive" });
+    } finally {
       setAnalyzing(false);
-    }, 2000);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 86400000) return "Today";
+    if (diff < 172800000) return "Yesterday";
+    return d.toLocaleDateString();
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top bar */}
       <header className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-2">
@@ -61,17 +128,22 @@ const Dashboard = () => {
               Eco<span className="text-primary">Sort</span> AI
             </span>
           </div>
-          <Link to="/">
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Link to="/nearby-centers">
+              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+                <MapPin className="w-4 h-4" /> Nearby Centers
+              </Button>
+            </Link>
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={handleLogout}>
               <LogOut className="w-4 h-4" /> Logout
             </Button>
-          </Link>
+          </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <h1 className="font-heading text-3xl font-bold text-foreground mb-2">Waste Detection</h1>
-        <p className="text-muted-foreground font-body mb-8">Upload an image to classify waste and get insights</p>
+        <p className="text-muted-foreground font-body mb-8">Upload an image to classify waste and get AI-powered insights</p>
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Upload area */}
@@ -79,7 +151,6 @@ const Dashboard = () => {
             <h2 className="font-heading font-semibold text-lg text-foreground mb-4 flex items-center gap-2">
               <ImageIcon className="w-5 h-5 text-primary" /> Upload Image
             </h2>
-
             <div
               onDrop={onDrop}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -90,7 +161,6 @@ const Dashboard = () => {
               onClick={() => document.getElementById("file-input")?.click()}
             >
               <input id="file-input" type="file" accept="image/*" className="hidden" onChange={onFileSelect} />
-
               {preview ? (
                 <img src={preview} alt="Preview" className="max-h-64 mx-auto rounded-lg object-contain" />
               ) : (
@@ -101,24 +171,15 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-
             {preview && (
-              <Button
-                variant="hero"
-                size="lg"
-                className="w-full mt-4"
-                onClick={analyze}
-                disabled={analyzing}
-              >
+              <Button variant="hero" size="lg" className="w-full mt-4" onClick={analyze} disabled={analyzing}>
                 {analyzing ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Analyzing...
+                    Analyzing with AI...
                   </span>
                 ) : (
-                  <>
-                    <Leaf className="w-4 h-4" /> Analyze Waste
-                  </>
+                  <><Leaf className="w-4 h-4" /> Analyze Waste</>
                 )}
               </Button>
             )}
@@ -128,23 +189,14 @@ const Dashboard = () => {
           <div className="space-y-6">
             <AnimatePresence mode="wait">
               {result ? (
-                <motion.div
-                  key="result"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="eco-card"
-                >
-                  <h2 className="font-heading font-semibold text-lg text-foreground mb-6">Analysis Results</h2>
+                <motion.div key="result" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="eco-card">
+                  <h2 className="font-heading font-semibold text-lg text-foreground mb-6">AI Analysis Results</h2>
 
-                  {/* Dominant badge */}
                   <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-heading font-semibold mb-6 ${
-                    result.dominant === "wet"
-                      ? "bg-eco-wet/15 text-eco-wet"
-                      : "bg-eco-dry/15 text-eco-dry"
+                    result.dominant === "Wet Waste" ? "bg-eco-wet/15 text-eco-wet" : "bg-eco-dry/15 text-eco-dry"
                   }`}>
-                    {result.dominant === "wet" ? <Droplets className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-                    Dominant: {result.dominant === "wet" ? "Wet" : "Dry"} Waste
+                    {result.dominant === "Wet Waste" ? <Droplets className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                    Dominant: {result.dominant}
                   </div>
 
                   {/* Wet bar */}
@@ -153,76 +205,96 @@ const Dashboard = () => {
                       <span className="flex items-center gap-1.5 text-sm font-body text-foreground">
                         <Droplets className="w-4 h-4 text-eco-wet" /> Wet Waste
                       </span>
-                      <span className="font-heading font-bold text-foreground">{result.wet}%</span>
+                      <span className="font-heading font-bold text-foreground">{result.wet_percent}%</span>
                     </div>
                     <div className="h-3 bg-muted rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${result.wet}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className="h-full rounded-full eco-progress-wet"
-                      />
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${result.wet_percent}%` }} transition={{ duration: 1, ease: "easeOut" }} className="h-full rounded-full eco-progress-wet" />
                     </div>
                   </div>
 
                   {/* Dry bar */}
-                  <div>
+                  <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
                       <span className="flex items-center gap-1.5 text-sm font-body text-foreground">
                         <Sun className="w-4 h-4 text-eco-dry" /> Dry Waste
                       </span>
-                      <span className="font-heading font-bold text-foreground">{result.dry}%</span>
+                      <span className="font-heading font-bold text-foreground">{result.dry_percent}%</span>
                     </div>
                     <div className="h-3 bg-muted rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${result.dry}%` }}
-                        transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-                        className="h-full rounded-full eco-progress-dry"
-                      />
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${result.dry_percent}%` }} transition={{ duration: 1, ease: "easeOut", delay: 0.2 }} className="h-full rounded-full eco-progress-dry" />
                     </div>
                   </div>
+
+                  {/* Waste types */}
+                  {result.waste_types && result.waste_types.length > 0 && (
+                    <div>
+                      <h3 className="font-heading font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
+                        <Recycle className="w-4 h-4 text-primary" /> Detected Waste Types
+                      </h3>
+                      <div className="space-y-2">
+                        {result.waste_types.map((wt, i) => (
+                          <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/60 text-sm">
+                            <div className="flex items-center gap-2">
+                              {wt.category === "biodegradable" ? (
+                                <Leaf className="w-3.5 h-3.5 text-green-500" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5 text-gray-400" />
+                              )}
+                              <span className="font-body text-foreground">{wt.name}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                wt.category === "biodegradable" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                              }`}>
+                                {wt.category}
+                              </span>
+                            </div>
+                            <span className={`text-xs font-medium ${suggestionLabels[wt.suggestion]?.color || ""}`}>
+                              {suggestionLabels[wt.suggestion]?.label || wt.suggestion}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               ) : (
-                <motion.div
-                  key="placeholder"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="eco-card flex flex-col items-center justify-center py-12 text-center"
-                >
+                <motion.div key="placeholder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="eco-card flex flex-col items-center justify-center py-12 text-center">
                   <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
                     <Leaf className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <p className="text-muted-foreground font-body">Upload an image and click analyze to see results</p>
+                  <p className="text-muted-foreground font-body">Upload an image and click analyze to see AI results</p>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Daily tracking */}
+            {/* History */}
             <div className="eco-card">
               <h2 className="font-heading font-semibold text-lg text-foreground mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" /> Daily Tracking
+                <TrendingUp className="w-5 h-5 text-primary" /> Recent Scans
               </h2>
-              <div className="space-y-4">
-                {mockHistory.map((day) => (
-                  <div key={day.date} className="flex items-center justify-between p-3 rounded-xl bg-secondary/60">
-                    <span className="font-heading font-medium text-sm text-foreground">{day.date}</span>
-                    <div className="flex items-center gap-4 text-sm font-body">
-                      <span className="flex items-center gap-1 text-eco-wet">
-                        <Droplets className="w-3.5 h-3.5" /> {day.wet}%
-                      </span>
-                      <span className="flex items-center gap-1 text-eco-dry">
-                        <Sun className="w-3.5 h-3.5" /> {day.dry}%
-                      </span>
-                      {day.wet > day.dry ? (
-                        <TrendingUp className="w-4 h-4 text-eco-wet" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-eco-dry" />
-                      )}
+              {history.length === 0 ? (
+                <p className="text-muted-foreground font-body text-sm text-center py-4">No scans yet. Upload an image to get started!</p>
+              ) : (
+                <div className="space-y-3">
+                  {history.map((scan) => (
+                    <div key={scan.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/60">
+                      <span className="font-heading font-medium text-sm text-foreground">{formatDate(scan.created_at)}</span>
+                      <div className="flex items-center gap-4 text-sm font-body">
+                        <span className="flex items-center gap-1 text-eco-wet">
+                          <Droplets className="w-3.5 h-3.5" /> {Math.round(scan.wet_percent)}%
+                        </span>
+                        <span className="flex items-center gap-1 text-eco-dry">
+                          <Sun className="w-3.5 h-3.5" /> {Math.round(scan.dry_percent)}%
+                        </span>
+                        {scan.wet_percent > scan.dry_percent ? (
+                          <TrendingUp className="w-4 h-4 text-eco-wet" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4 text-eco-dry" />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
