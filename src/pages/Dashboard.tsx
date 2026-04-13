@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/ecosort-logo.jpeg";
-import { Upload, Droplets, Sun, TrendingUp, TrendingDown, ImageIcon, LogOut, Leaf, MapPin, Recycle, Trash2 } from "lucide-react";
+import { Upload, Droplets, Sun, TrendingUp, TrendingDown, ImageIcon, LogOut, Leaf, MapPin, Recycle, Trash2, Camera } from "lucide-react";
+import CameraCapture from "@/components/CameraCapture";
+import DailyTracking from "@/components/DailyTracking";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +37,7 @@ const Dashboard = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [showCamera, setShowCamera] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -48,7 +51,7 @@ const Dashboard = () => {
       .from("waste_scans")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(5);
+      .limit(20);
     if (data) setHistory(data);
   };
 
@@ -172,6 +175,14 @@ const Dashboard = () => {
                   <p className="text-muted-foreground/60 font-body text-xs mt-1">Supports JPG, PNG, WebP</p>
                 </div>
               )}
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" className="gap-2 flex-1" onClick={(e) => { e.stopPropagation(); setShowCamera(true); }}>
+                <Camera className="w-4 h-4" /> Camera
+              </Button>
+              <Button variant="outline" className="gap-2 flex-1" onClick={() => document.getElementById("file-input")?.click()}>
+                <Upload className="w-4 h-4" /> Upload
+              </Button>
             </div>
             {preview && (
               <Button variant="hero" size="lg" className="w-full mt-4" onClick={analyze} disabled={analyzing}>
@@ -298,9 +309,19 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
+
+            {/* Daily Tracking */}
+            <DailyTracking history={history} />
           </div>
         </div>
       </main>
+
+      {showCamera && (
+        <CameraCapture
+          onCapture={(dataUrl) => { setPreview(dataUrl); setResult(null); setShowCamera(false); }}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   );
 };
