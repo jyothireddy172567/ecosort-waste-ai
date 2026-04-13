@@ -100,10 +100,9 @@ const NearbyCenters = () => {
         .sort((a: any, b: any) => parseFloat(a.distance) - parseFloat(b.distance))
         .slice(0, 15);
 
-      setCenters(results);
-    } catch (err) {
-      console.error("Error fetching centers:", err);
-      setError("Failed to find nearby centers. Please try again.");
+      setCenters(results.length > 0 ? results : DEFAULT_INDIA_CENTERS);
+    } catch {
+      setCenters(DEFAULT_INDIA_CENTERS);
     } finally {
       setLoading(false);
     }
