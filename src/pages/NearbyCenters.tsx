@@ -28,7 +28,7 @@ const DEFAULT_INDIA_CENTERS: WasteCenter[] = [
 const NearbyCenters = () => {
   const [centers, setCenters] = useState<WasteCenter[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLon, setUserLon] = useState<number | null>(null);
   const { signOut } = useAuth();
