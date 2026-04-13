@@ -36,7 +36,7 @@ const NearbyCenters = () => {
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser");
+      setCenters(DEFAULT_INDIA_CENTERS);
       setLoading(false);
       return;
     }
@@ -48,10 +48,9 @@ const NearbyCenters = () => {
         setUserLon(longitude);
         await fetchNearbyCenters(latitude, longitude);
       },
-      (err) => {
-        setError("Unable to get your location. Please enable location access.");
+      () => {
+        setCenters(DEFAULT_INDIA_CENTERS);
         setLoading(false);
-        console.error("Geolocation error:", err);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
