@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/ecosort-logo.jpeg";
-import { Recycle } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const Navbar = () => {
   return (
@@ -18,6 +18,7 @@ const Navbar = () => {
           <a href="#how-it-works" className="hover:text-primary transition-colors">How It Works</a>
         </div>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Link to="/login">
             <Button variant="ghost" size="sm">Log In</Button>
           </Link>
