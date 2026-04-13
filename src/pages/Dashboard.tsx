@@ -184,7 +184,6 @@ const Dashboard = () => {
                 <Upload className="w-4 h-4" /> Upload
               </Button>
             </div>
-            </div>
             {preview && (
               <Button variant="hero" size="lg" className="w-full mt-4" onClick={analyze} disabled={analyzing}>
                 {analyzing ? (
