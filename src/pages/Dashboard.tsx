@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/ecosort-logo.jpeg";
 import { Upload, Droplets, Sun, TrendingUp, TrendingDown, ImageIcon, LogOut, Leaf, MapPin, Recycle, Trash2 } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -134,6 +135,7 @@ const Dashboard = () => {
                 <MapPin className="w-4 h-4" /> Nearby Centers
               </Button>
             </Link>
+            <ThemeToggle />
             <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={handleLogout}>
               <LogOut className="w-4 h-4" /> Logout
             </Button>
