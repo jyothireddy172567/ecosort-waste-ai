@@ -309,9 +309,19 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
+
+            {/* Daily Tracking */}
+            <DailyTracking history={history} />
           </div>
         </div>
       </main>
+
+      {showCamera && (
+        <CameraCapture
+          onCapture={(dataUrl) => { setPreview(dataUrl); setResult(null); setShowCamera(false); }}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   );
 };

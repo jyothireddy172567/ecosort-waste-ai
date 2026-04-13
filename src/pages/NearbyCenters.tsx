@@ -17,6 +17,14 @@ interface WasteCenter {
   lon: number;
 }
 
+const DEFAULT_INDIA_CENTERS: WasteCenter[] = [
+  { name: "Chennai Waste Center", distance: "—", address: "Anna Salai, Chennai, Tamil Nadu", phone: "+91 9876543210", lat: 13.0827, lon: 80.2707 },
+  { name: "Hyderabad Recycling Hub", distance: "—", address: "Banjara Hills, Hyderabad, Telangana", phone: "+91 9123456780", lat: 17.385, lon: 78.4867 },
+  { name: "Bangalore Eco Center", distance: "—", address: "Koramangala, Bangalore, Karnataka", phone: "+91 9988776655", lat: 12.9352, lon: 77.6245 },
+  { name: "Delhi Waste Management", distance: "—", address: "Connaught Place, New Delhi", phone: "+91 9012345678", lat: 28.6315, lon: 77.2167 },
+  { name: "Mumbai Green Hub", distance: "—", address: "Andheri East, Mumbai, Maharashtra", phone: "+91 9090909090", lat: 19.1136, lon: 72.8697 },
+];
+
 const NearbyCenters = () => {
   const [centers, setCenters] = useState<WasteCenter[]>([]);
   const [loading, setLoading] = useState(true);
