@@ -161,23 +161,13 @@ const NearbyCenters = () => {
             <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
             <p className="text-muted-foreground font-body">Detecting your location & finding nearby centers...</p>
           </div>
-        ) : error ? (
-          <div className="eco-card text-center py-12">
-            <MapPin className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <p className="text-foreground font-heading font-semibold mb-2">Location Error</p>
-            <p className="text-muted-foreground font-body text-sm">{error}</p>
-            <Button variant="hero" size="lg" className="mt-4" onClick={() => window.location.reload()}>
-              Try Again
-            </Button>
-          </div>
-        ) : centers.length === 0 ? (
-          <div className="eco-card text-center py-12">
-            <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-foreground font-heading font-semibold mb-2">No Centers Found</p>
-            <p className="text-muted-foreground font-body text-sm">No waste centers found within 10km of your location.</p>
-          </div>
         ) : (
           <div className="space-y-4">
+            {!userLat && (
+              <div className="eco-card text-center py-3 mb-2">
+                <p className="text-sm text-muted-foreground font-body">📍 Showing default India centers. Enable location for nearby results.</p>
+              </div>
+            )}
             {centers.map((center, i) => (
               <motion.div
                 key={i}
