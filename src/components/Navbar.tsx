@@ -2,8 +2,11 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/ecosort-logo.jpeg";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
+  const { user } = useAuth();
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
@@ -19,12 +22,20 @@ const Navbar = () => {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Link to="/login">
-            <Button variant="ghost" size="sm">Log In</Button>
-          </Link>
-          <Link to="/signup">
-            <Button variant="hero" size="sm">Get Started</Button>
-          </Link>
+          {user ? (
+            <Link to="/dashboard">
+              <Button variant="hero" size="sm">Dashboard</Button>
+            </Link>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" size="sm">Log In</Button>
+              </Link>
+              <Link to="/dashboard">
+                <Button variant="hero" size="sm">Start Free</Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>

@@ -44,7 +44,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) fetchHistory();
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchHistory = async () => {
     const { data } = await supabase
