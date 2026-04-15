@@ -139,9 +139,17 @@ const Dashboard = () => {
               </Button>
             </Link>
             <ThemeToggle />
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={handleLogout}>
-              <LogOut className="w-4 h-4" /> Logout
-            </Button>
+            {user ? (
+              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={handleLogout}>
+                <LogOut className="w-4 h-4" /> Logout
+              </Button>
+            ) : (
+              <Link to="/login">
+                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+                  Log In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
