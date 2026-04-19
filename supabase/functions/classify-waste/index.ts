@@ -161,6 +161,7 @@ You MUST call the classify_waste function with accurate, balanced results.`,
     }
 
     const result = JSON.parse(toolCall.function.arguments);
+    console.log("AI classification result:", JSON.stringify(result));
     
     // Validate and normalize
     result.wet_percent = Math.max(0, Math.min(100, Math.round(result.wet_percent)));
