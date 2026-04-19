@@ -41,30 +41,52 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           {
             role: "system",
-            content: `You are an expert waste classification AI. Analyze images of waste and classify them into wet (organic/biodegradable) and dry (inorganic/non-biodegradable) categories.
+            content: `You are an expert waste classification AI specializing in Indian household waste segregation. You analyze images and accurately split waste into WET (organic/biodegradable) vs DRY (inorganic/recyclable) categories.
 
-IMPORTANT classification rules:
-- Wet Waste (organic/biodegradable): food scraps, fruit peels, vegetable waste, leftover cooked food, tea bags, coffee grounds, garden waste, flowers, leaves, egg shells, meat, fish, dairy products, bread, rice, noodles
-- Dry Waste (inorganic/non-biodegradable): plastic bottles, paper, cardboard, metal cans, glass, plastic bags, packaging, electronic waste, rubber, cloth/fabric, ceramics, thermocol, styrofoam, aluminum foil
+=== WET WASTE (organic, biodegradable, compostable) ===
+- ALL food: cooked food, rice, roti, dal, curry, noodles, bread, leftovers
+- Fruit peels & cores: banana peel, apple core, orange peel, mango skin, watermelon rind
+- Vegetable waste: onion skin, potato peel, tomato, carrot tops, leafy scraps
+- Tea bags, coffee grounds, used tea leaves
+- Egg shells, meat scraps, fish bones, bones
+- Dairy: milk, curd, paneer, cheese
+- Garden waste: flowers, leaves, grass, twigs, plant trimmings
 
-When analyzing:
-- Look carefully at ALL items in the image
-- Estimate the proportion of wet vs dry waste by volume/area
-- Most real-world waste images contain BOTH wet and dry waste
-- Food waste images should have HIGH wet_percent (70-100%)
-- Plastic/paper/packaging images should have HIGH dry_percent (70-100%)
-- Mixed waste should have balanced percentages
+=== DRY WASTE (inorganic, recyclable, non-biodegradable) ===
+- Plastic: bottles, bags, wrappers, containers, straws, cutlery
+- Paper & cardboard: newspaper, boxes, cartons, magazines, tissue
+- Metal: cans, foil, tins, scrap metal
+- Glass: bottles, jars, broken glass
+- Packaging: chip bags, candy wrappers, blister packs
+- Other: rubber, cloth, fabric, ceramics, thermocol, styrofoam, e-waste
 
-You MUST call the classify_waste function with your results.`,
+=== CRITICAL ANALYSIS RULES ===
+1. LOOK CAREFULLY at every item visible. Examine colors, textures, shapes.
+2. Identify EACH item separately and classify it.
+3. Estimate percentages by VISUAL AREA/VOLUME the items occupy.
+4. DO NOT default to dry waste. Look for organic matter:
+   - Brown/yellow/green soft items = likely wet (food/peels)
+   - Shiny/colorful packaging = likely dry
+   - Both present? → split percentages accordingly.
+5. Examples of EXPECTED outputs:
+   - Banana peel only → wet_percent: 100, dry_percent: 0
+   - Plastic bottle only → wet_percent: 0, dry_percent: 100
+   - Plate of leftover food → wet_percent: 95, dry_percent: 5
+   - Apple + plastic wrapper → wet_percent: 60, dry_percent: 40
+   - Newspaper with tea leaves → wet_percent: 30, dry_percent: 70
+6. If image is unclear/blurry, still make your BEST estimate based on visible cues. NEVER default to 0/100 unless you genuinely see only one type.
+7. List at least 1-2 specific waste items in waste_types with their actual names.
+
+You MUST call the classify_waste function with accurate, balanced results.`,
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Analyze this waste image. Identify all waste items, classify each as wet or dry, and provide overall percentages. Be realistic - most waste has both wet and dry components." },
+              { type: "text", text: "Analyze this waste image carefully. Look at every item: identify food/organic matter (wet) AND packaging/plastic/paper (dry). Estimate realistic percentages by visual area. Do NOT default to 100% dry - if you see ANY organic matter (food, peels, leaves), assign it appropriate wet percentage. List the specific items you detect." },
               { 
                 type: "image_url", 
                 image_url: { 
@@ -139,6 +161,7 @@ You MUST call the classify_waste function with your results.`,
     }
 
     const result = JSON.parse(toolCall.function.arguments);
+    console.log("AI classification result:", JSON.stringify(result));
     
     // Validate and normalize
     result.wet_percent = Math.max(0, Math.min(100, Math.round(result.wet_percent)));
