@@ -87,7 +87,7 @@ You MUST call the classify_waste function with accurate, balanced, COMPLETE resu
           {
             role: "user",
             content: [
-              { type: "text", text: "Analyze this waste image carefully. Look at every item: identify food/organic matter (wet) AND packaging/plastic/paper (dry). Estimate realistic percentages by visual area. Do NOT default to 100% dry - if you see ANY organic matter (food, peels, leaves), assign it appropriate wet percentage. List the specific items you detect." },
+              { type: "text", text: "Analyze this waste image carefully. Identify and list EVERY distinct item you can see — be exhaustive, do not skip any items. Estimate realistic wet/dry percentages by visual area. Return one entry in waste_types for each visible item with its specific name." },
               { 
                 type: "image_url", 
                 image_url: { 
