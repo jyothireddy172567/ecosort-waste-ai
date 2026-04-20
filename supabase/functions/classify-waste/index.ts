@@ -79,14 +79,15 @@ serve(async (req) => {
    - Apple + plastic wrapper → wet_percent: 60, dry_percent: 40
    - Newspaper with tea leaves → wet_percent: 30, dry_percent: 70
 6. If image is unclear/blurry, still make your BEST estimate based on visible cues. NEVER default to 0/100 unless you genuinely see only one type.
-7. List at least 1-2 specific waste items in waste_types with their actual names.
+7. EXHAUSTIVE DETECTION: List EVERY distinct waste item you can see in waste_types — do not skip items. If you see 6 items, return 6 entries. If you see 10, return 10. Be thorough.
+8. Use specific names (e.g. "banana peel", "PET plastic bottle", "newspaper", "onion skin") — never generic terms like "waste" or "trash".
 
-You MUST call the classify_waste function with accurate, balanced results.`,
+You MUST call the classify_waste function with accurate, balanced, COMPLETE results listing every visible item.`,
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Analyze this waste image carefully. Look at every item: identify food/organic matter (wet) AND packaging/plastic/paper (dry). Estimate realistic percentages by visual area. Do NOT default to 100% dry - if you see ANY organic matter (food, peels, leaves), assign it appropriate wet percentage. List the specific items you detect." },
+              { type: "text", text: "Analyze this waste image carefully. Identify and list EVERY distinct item you can see — be exhaustive, do not skip any items. Estimate realistic wet/dry percentages by visual area. Return one entry in waste_types for each visible item with its specific name." },
               { 
                 type: "image_url", 
                 image_url: { 
