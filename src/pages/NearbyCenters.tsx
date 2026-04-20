@@ -3,9 +3,8 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import logo from "@/assets/ecosort-logo.jpeg";
-import { MapPin, Phone, Navigation, Loader2, LogOut, ArrowLeft, ExternalLink } from "lucide-react";
+import { MapPin, Phone, Navigation, Loader2, ArrowLeft, ExternalLink } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 interface WasteCenter {
@@ -31,7 +30,6 @@ const NearbyCenters = () => {
   
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLon, setUserLon] = useState<number | null>(null);
-  const { signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -121,10 +119,6 @@ const NearbyCenters = () => {
     window.open(url, "_blank");
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/");
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -143,9 +137,6 @@ const NearbyCenters = () => {
               </Button>
             </Link>
             <ThemeToggle />
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={handleLogout}>
-              <LogOut className="w-4 h-4" /> Logout
-            </Button>
           </div>
         </div>
       </header>
