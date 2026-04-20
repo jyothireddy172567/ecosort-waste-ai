@@ -53,7 +53,7 @@ const HeroSection = () => {
             transition={{ duration: 0.7, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Link to="/signup">
+            <Link to="/dashboard">
               <Button variant="hero" size="xl" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
                 Start Detection
                 <ArrowRight className="w-5 h-5" />

@@ -3,11 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/ecosort-logo.jpeg";
-import { Upload, Droplets, Sun, TrendingUp, TrendingDown, ImageIcon, LogOut, Leaf, MapPin, Recycle, Trash2, Camera } from "lucide-react";
+import { Upload, Droplets, Sun, TrendingUp, TrendingDown, ImageIcon, Leaf, MapPin, Recycle, Trash2, Camera } from "lucide-react";
 import CameraCapture from "@/components/CameraCapture";
 import DailyTracking from "@/components/DailyTracking";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -38,22 +37,15 @@ const Dashboard = () => {
   const [dragOver, setDragOver] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [showCamera, setShowCamera] = useState(false);
-  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) fetchHistory();
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchHistory = async () => {
-    const { data } = await supabase
-      .from("waste_scans")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(20);
-    if (data) setHistory(data);
-  };
+    const stored = localStorage.getItem("waste_scans_local");
+    if (stored) {
+      try { setHistory(JSON.parse(stored)); } catch { /* noop */ }
+    }
+  }, []);
 
   const handleFile = useCallback((file: File) => {
     const reader = new FileReader();
@@ -89,28 +81,24 @@ const Dashboard = () => {
       const prediction: PredictionResult = data;
       setResult(prediction);
 
-      // Save to database
-      if (user) {
-        await supabase.from("waste_scans").insert({
-          user_id: user.id,
-          wet_percent: prediction.wet_percent,
-          dry_percent: prediction.dry_percent,
-          dominant: prediction.dominant,
-          waste_types: prediction.waste_types as any,
-        });
-        fetchHistory();
-      }
+      // Save scan locally (no auth required)
+      const newScan = {
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        wet_percent: prediction.wet_percent,
+        dry_percent: prediction.dry_percent,
+        dominant: prediction.dominant,
+        waste_types: prediction.waste_types,
+      };
+      const updated = [newScan, ...history].slice(0, 20);
+      setHistory(updated);
+      localStorage.setItem("waste_scans_local", JSON.stringify(updated));
     } catch (err: any) {
       console.error("Analysis error:", err);
       toast({ title: "Analysis failed", description: err.message || "Please try again.", variant: "destructive" });
     } finally {
       setAnalyzing(false);
     }
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/");
   };
 
   const formatDate = (dateStr: string) => {
@@ -139,17 +127,6 @@ const Dashboard = () => {
               </Button>
             </Link>
             <ThemeToggle />
-            {user ? (
-              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={handleLogout}>
-                <LogOut className="w-4 h-4" /> Logout
-              </Button>
-            ) : (
-              <Link to="/login">
-                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-                  Log In
-                </Button>
-              </Link>
-            )}
           </div>
         </div>
       </header>
